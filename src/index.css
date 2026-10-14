@@ -1,0 +1,150 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Colors - neutral scale only */
+  --color-bg: #ffffff;
+  --color-bg-subtle: #f9f9f9;
+  --color-bg-muted: #f3f3f3;
+  --color-bg-emphasis: #e8e8e8;
+  --color-border: #e2e2e2;
+  --color-border-strong: #c0c0c0;
+  --color-fg: #0a0a0a;
+  --color-fg-muted: #555555;
+  --color-fg-subtle: #888888;
+  --color-fg-placeholder: #aaaaaa;
+  --color-ring: #0a0a0a;
+  --color-invert-bg: #0a0a0a;
+  --color-invert-fg: #ffffff;
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.06);
+  --shadow-md: 0 2px 8px 0 rgb(0 0 0 / 0.08);
+  --shadow-lg: 0 4px 24px 0 rgb(0 0 0 / 0.10);
+}
+
+/* Dark mode overrides */
+.dark {
+  --color-bg: #0a0a0a;
+  --color-bg-subtle: #111111;
+  --color-bg-muted: #1a1a1a;
+  --color-bg-emphasis: #242424;
+  --color-border: #2a2a2a;
+  --color-border-strong: #444444;
+  --color-fg: #f5f5f5;
+  --color-fg-muted: #aaaaaa;
+  --color-fg-subtle: #666666;
+  --color-fg-placeholder: #555555;
+  --color-ring: #f5f5f5;
+  --color-invert-bg: #f5f5f5;
+  --color-invert-fg: #0a0a0a;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 2px 8px 0 rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 4px 24px 0 rgb(0 0 0 / 0.5);
+}
+
+/* Base */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-bg);
+  color: var(--color-fg);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-fg-subtle);
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+/* Selection */
+::selection {
+  background: var(--color-fg);
+  color: var(--color-bg);
+}
+
+/* Transitions */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slide-in-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.25s ease-out;
+}
+
+.animate-slide-in-up {
+  animation: slide-in-up 0.25s ease-out;
+}
+
+.animate-skeleton {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* Utility classes using CSS vars */
+.bg-surface { background-color: var(--color-bg); }
+.bg-surface-subtle { background-color: var(--color-bg-subtle); }
+.bg-surface-muted { background-color: var(--color-bg-muted); }
+.bg-surface-emphasis { background-color: var(--color-bg-emphasis); }
+.bg-invert { background-color: var(--color-invert-bg); }
+.text-fg { color: var(--color-fg); }
+.text-fg-muted { color: var(--color-fg-muted); }
+.text-fg-subtle { color: var(--color-fg-subtle); }
+.text-invert { color: var(--color-invert-fg); }
+.border-base { border-color: var(--color-border); }
+.border-strong { border-color: var(--color-border-strong); }
+.shadow-base { box-shadow: var(--shadow-md); }
