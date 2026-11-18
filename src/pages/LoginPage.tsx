@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Eye, EyeOff } from 'lucide-react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, Navigate } from 'react-router-dom'
 import { loginSchema, type LoginFormData } from '@/features/auth/schemas'
 import { loginApi } from '@/features/auth/api'
 import { useAuth } from '@/features/auth/AuthContext'
@@ -11,8 +11,9 @@ import { Button } from '@/components/ui/Button'
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(true)
   const [apiError, setApiError] = useState<string | null>(null)
-  const { setUser } = useAuth()
+  const { user, isLoading, setUser } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/'
@@ -25,13 +26,15 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   })
 
+  // Jika sudah login, langsung redirect ke halaman sebelumnya
+  if (!isLoading && user) {
+    return <Navigate to={from} replace />
+  }
+
   const onSubmit = async (data: LoginFormData) => {
     setApiError(null)
     try {
-      const res = await loginApi(data)
-      if (import.meta.env.VITE_USE_MOCK === 'true') {
-        sessionStorage.setItem('mock_logged_in', 'true')
-      }
+      const res = await loginApi(data, rememberMe)
       setUser(res.user)
       navigate(from, { replace: true })
     } catch (err: unknown) {
@@ -92,6 +95,17 @@ export default function LoginPage() {
                 </p>
               )}
             </div>
+
+            {/* Remember Me */}
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-4 w-4 rounded border-base accent-fg cursor-pointer"
+              />
+              <span className="text-sm text-fg-muted">Ingat saya</span>
+            </label>
 
             {/* API Error */}
             {apiError && (
