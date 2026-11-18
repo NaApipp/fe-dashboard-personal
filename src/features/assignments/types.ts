@@ -1,27 +1,44 @@
-export type AssignmentStatus = 'belum' | 'proses' | 'selesai'
-export type AssignmentPriority = 'rendah' | 'sedang' | 'tinggi'
+export type AssignmentStatus =
+  | 'pending'
+  | 'in_progress'
+  | 'completed'
+  | 'belum'
+  | 'proses'
+  | 'selesai'
+
+export type AssignmentPriority =
+  | 'high'
+  | 'medium'
+  | 'low'
+  | 'tinggi'
+  | 'sedang'
+  | 'rendah'
 
 export interface ChecklistItem {
-  text: string
-  done: boolean
+  title_checklist: string
+  isCompleted: boolean
 }
 
 export interface Reference {
-  title: string
+  title_references: string
   url: string
 }
 
 export interface Assignment {
   _id: string
   title: string
-  subject: string // mata kuliah
-  deadline: [string, string] // ["YYYY-MM-DD", "HH:MM"]
-  priority: AssignmentPriority
+  description: string
   status: AssignmentStatus
-  notes?: string
-  checklist?: ChecklistItem[]
-  references?: Reference[]
+  priority: AssignmentPriority
+  deadline: [string, string] | string
+  location: string
+  checklist: ChecklistItem[]
+  references: Reference[]
+  createdAt?: string
+  updatedAt?: string
   created_at?: string
+  subject?: string
+  notes?: string
 }
 
 export interface AssignmentsListResponse {
@@ -47,5 +64,26 @@ export interface DeleteAssignmentResponse {
   message: string
 }
 
-export type CreateAssignmentPayload = Omit<Assignment, '_id' | 'created_at'>
-export type UpdateAssignmentPayload = Partial<CreateAssignmentPayload>
+export interface CreateAssignmentPayload {
+  title: string
+  description: string
+  status: AssignmentStatus
+  priority: AssignmentPriority
+  deadline: [string, string]
+  location: string
+  checklist: ChecklistItem[]
+  references: Reference[]
+  subject?: string
+}
+
+export interface UpdateAssignmentPayload {
+  title?: string
+  description?: string
+  status?: AssignmentStatus
+  priority?: AssignmentPriority
+  deadline?: string | [string, string]
+  location?: string
+  checklist?: ChecklistItem[]
+  references?: Reference[]
+  subject?: string
+}
