@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom'
 import { getMeApi, logoutApi } from './api'
 import type { User } from './types'
 import { useToast } from '@/components/ui/ToastContext'
+import { tokenStorage } from '@/lib/api/client'
 
 interface AuthContextValue {
   user: User | null
@@ -27,11 +28,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { addToast } = useToast()
   const handledRef = useRef(false)
 
-  // Check session on mount
+  // Check session on mount — only call /me if token exists
   useEffect(() => {
+    const token = tokenStorage.get()
+    if (!token) {
+      setIsLoading(false)
+      return
+    }
     getMeApi()
       .then((res) => setUser(res.user))
-      .catch(() => setUser(null))
+      .catch(() => {
+        tokenStorage.clear()
+        setUser(null)
+      })
       .finally(() => setIsLoading(false))
   }, [])
 
@@ -56,9 +65,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await logoutApi()
     } finally {
-      if (import.meta.env.VITE_USE_MOCK === 'true') {
-        sessionStorage.removeItem('mock_logged_in')
-      }
       setUser(null)
       navigate('/login', { replace: true })
     }
