@@ -21,7 +21,7 @@ export default function DashboardPage() {
   const readIds = getReadIds()
   const unreadCount = messages ? messages.filter((m) => !readIds.has(m._id)).length : 0
   const pendingAssignments = assignments
-    ? assignments.filter((a) => a.status !== 'selesai').length
+    ? assignments.filter((a) => a.status !== 'selesai' && a.status !== 'completed').length
     : 0
   const todaySchedule = schedule
     ? schedule.filter((s) => isToday(parseISO(s.date)))
@@ -29,7 +29,7 @@ export default function DashboardPage() {
 
   const nearestDeadline = assignments
     ? assignments
-        .filter((a) => a.status !== 'selesai')
+        .filter((a) => a.status !== 'selesai' && a.status !== 'completed')
         .sort((a, b) => {
           const da = `${a.deadline[0]}T${a.deadline[1]}`
           const db = `${b.deadline[0]}T${b.deadline[1]}`
@@ -40,7 +40,7 @@ export default function DashboardPage() {
   const recentMessages = messages?.slice(0, 5) ?? []
   const nearestAssignments = assignments
     ? [...assignments]
-        .filter((a) => a.status !== 'selesai')
+        .filter((a) => a.status !== 'selesai' && a.status !== 'completed')
         .sort((a, b) => {
           const da = `${a.deadline[0]}T${a.deadline[1]}`
           const db = `${b.deadline[0]}T${b.deadline[1]}`
