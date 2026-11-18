@@ -14,7 +14,7 @@ Dokumen ini mencatat seluruh riwayat, tahapan pengembangan, keputusan arsitektur
   3. **Jadwal Pribadi (Schedule)**: Agenda harian/mingguan
   4. **Dashboard**: Ringkasan statistik & aktivitas terkini
   5. **Auth**: Proteksi halaman login & manajemen sesi
-- **Target Backend API:** `https://api.appsporto.my.id` (Auth via httpOnly Cookie)
+- **Target Backend API:** `https://api.appsporto.my.id` (Auth via Bearer Token JWT)
 - **Mode Demonstrasi:** Built-in Mock Mode (`VITE_USE_MOCK=true`)
 
 ---
@@ -28,7 +28,7 @@ Dokumen ini mencatat seluruh riwayat, tahapan pengembangan, keputusan arsitektur
 | **Routing** | React Router v6 | Layout nesting & `ProtectedRoute` |
 | **State & Fetching** | TanStack Query v5 (React Query) | Cache, invalidateQueries, optimistic update |
 | **Form & Validasi** | React Hook Form + Zod | Schema validation & error handling |
-| **HTTP Client** | Axios | Interceptor 401 & `withCredentials: true` |
+| **HTTP Client** | Axios | Interceptor Bearer Token & Interceptor 401 |
 | **Date Utility** | `date-fns` (Locale Indonesia `id`) | Format tanggal & perkiraan waktu sisa |
 | **Icons** | `lucide-react` | Icon set monokrom murni |
 
@@ -49,6 +49,7 @@ flowchart TD
     I --> J[10. Verifikasi Build & Pengujian Browser]
     J --> K[11. Integrasi API Asli & Debugging Production]
     K --> L[12. Normalisasi Data Layer & Error Boundary]
+    L --> M[13. Integrasi API Auth Real & Security Hardening]
 ```
 
 ### Tahap 1: Analisis Spesifikasi & Dokumentasi API
@@ -192,6 +193,40 @@ Semua request API (`message`, `asignment`, `schedule`) mengembalikan status `200
 
 ---
 
+### Tahap 13: Integrasi API Auth Real & Security Hardening (`api-porto-v2`)
+
+Berdasarkan dokumen spesifikasi backend terbaru (`API_DOCUMENTATION.md`), mekanisme autentikasi menggunakan **Bearer Token JWT** via header `Authorization: Bearer <token>`, bukan session cookie. Dilakukan refactoring pada layer API client dan fitur autentikasi untuk memastikan integrasi seamless dan pengamanan kredensial.
+
+**Detail Implementasi & Security Hardening:**
+
+1. **Environment Variable Synchronization (`.env` & `.env.example`)**:
+   - Memperbaiki variable key dari `API_URL` menjadi `VITE_API_BASE_URL` (`https://api.appsporto.my.id`) agar dapat diakses oleh bundle client Vite (`import.meta.env.VITE_*`).
+
+2. **Modular Token Storage & Axios Interceptors (`src/lib/api/client.ts`)**:
+   - Menghapus konfigurasi `withCredentials: true` yang tidak lagi diperlukan untuk Bearer Token.
+   - Membuat modul `tokenStorage` terpusat (*Single Source of Truth*):
+     - Memisahkan penyimpanan token antara `localStorage` (persistent) dan `sessionStorage` (temporary session).
+     - Menyediakan method `get()`, `set(token, persistent)`, `clear()`, dan `isPersistent()`.
+     - Mengubah key token dari generic `'token'` menjadi `'auth_token'` untuk mencegah benturan (collision).
+   - **Request Interceptor**: Menginjeksi header `Authorization: Bearer <token>` secara dinamis pada setiap request outgoing jika token tersedia.
+   - **Response Interceptor (401 Handler)**: Menghapus token secara otomatis via `tokenStorage.clear()` dan menyiarkan event global `window.dispatchEvent(new CustomEvent('auth:unauthorized'))` untuk memicu redirect ke halaman login dan notifikasi toast sesi berakhir.
+   - **Error Normalization**: Menambahkan parser untuk format error validasi Zod dari backend (`errors: [{ field: "body.<name>", message: "..." }]`) menjadi mapping field errors yang bersih.
+
+3. **Refactoring Auth API Layer (`src/features/auth/api.ts`)**:
+   - Fungsi `loginApi(data, rememberMe)` sekarang menerima flag `rememberMe` untuk menentukan apakah token disimpan di `localStorage` atau `sessionStorage`.
+   - `logoutApi()` memanggil endpoint `POST /api/auth/logout` lalu membersihkan token melalui `tokenStorage.clear()`.
+   - `getMeApi()` mock maupun real diverifikasi menggunakan keberadaan token valid dari `tokenStorage`.
+
+4. **Optimasi Auth State & Lifecycle (`src/features/auth/AuthContext.tsx`)**:
+   - **Early Exit / Token Guard**: Saat aplikasi pertama kali dimuat (`mount`), jika tidak ada token di storage, pemanggilan `getMeApi()` langsung dilewati dan `isLoading` diset `false`, menghemat round-trip request bagi user yang belum login.
+   - Pembersihan token otomatis saat request `getMeApi()` gagal/invalid.
+
+5. **Peningkatan UX & Keamanan Login Page (`src/pages/LoginPage.tsx`)**:
+   - Menambahkan opsi checkbox **"Ingat saya"** (*Remember Me*) yang terhubung ke opsi penyimpanan storage token.
+   - **Already Authenticated Guard**: Jika user yang sudah terautentikasi mengakses rute `/login`, halaman akan otomatis mengarahkan (*redirect*) ke tujuan sebelumnya atau dashboard utama (`<Navigate to={from} replace />`).
+
+---
+
 ## 🔧 Riwayat Masalah Teknis & Penyelesaian (Troubleshooting Log)
 
 | No | Masalah | Penyebab | Solusi / Perbaikan |
@@ -202,6 +237,8 @@ Semua request API (`message`, `asignment`, `schedule`) mengembalikan status `200
 | **4** | Type explicit React imports error | Konfigurasi strict TypeScript pada JSX transformer | Menambahkan `import type React from 'react'` di komponen UI dasar. |
 | **5** | Login berhasil tapi redirect ke `/login` lagi | `SameSite=Lax` cookie diblokir browser saat lintas domain | Konfigurasi **Vite Proxy** → request tunneled via `localhost`. |
 | **6** | Black screen setelah berhasil masuk dashboard | `RangeError: Invalid time value` dari `date-fns` saat menerima format tanggal berbeda dari API asli | Rewrite `date.ts` defensive + tambah normalisasi per-feature + `ErrorBoundary` global. |
+| **7** | Request auth & base URL tidak terbaca dari `.env` | Variable key menggunakan `API_URL` alih-alih prefix `VITE_API_BASE_URL` | Update `.env` & `.env.example` ke `VITE_API_BASE_URL`. |
+| **8** | Auth berbasis Bearer Token belum sinkron | Implementasi awal mengasumsikan cookie httpOnly | Setup `tokenStorage`, interceptor `Authorization: Bearer <token>`, pembersihan token otomatis saat 401, dan fitur remember-me. |
 
 ---
 
